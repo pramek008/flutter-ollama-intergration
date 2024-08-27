@@ -11,7 +11,7 @@ part 'chat_state.dart';
 
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final GetChatResponseUsecase _getChatResponseUsecase;
-  StreamSubscription? _chatSubscription;
+  StreamSubscription<ChatResponseModel>? _chatSubscription;
 
   ChatBloc(this._getChatResponseUsecase) : super(ChatInitial()) {
     on<SendMessageEvent>(_onSendMessage);
@@ -22,21 +22,40 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   void _onSendMessage(SendMessageEvent event, Emitter<ChatState> emit) {
     emit(ChatLoading());
     _chatSubscription?.cancel();
-    _chatSubscription =
-        _getChatResponseUsecase.execute(userInput: event.message).listen(
-              (response) => add(
-                ReceiveResponseEvent(response),
+
+    if (event.streamMode) {
+      _chatSubscription = _getChatResponseUsecase
+          .executeStream(userInput: event.message)
+          .listen(
+            (response) => add(
+              ReceiveResponseEvent(response),
+            ),
+            onError: (error) => add(
+              ReceiveResponseEvent(
+                ChatResponseModel(response: "Error: $error", done: true),
               ),
-              onError: (error) => add(
-                ReceiveResponseEvent(
-                  ChatResponseModel(response: "Error: $error", done: true),
-                ),
-              ),
-            );
+            ),
+          );
+    } else {
+      _getChatResponseUsecase.executeNonStream(userInput: event.message).then(
+        (response) {
+          add(
+            ReceiveResponseEvent(response),
+          );
+        },
+        onError: (error) {
+          add(
+            ReceiveResponseEvent(
+              ChatResponseModel(response: "Error: $error", done: true),
+            ),
+          );
+        },
+      );
+    }
   }
 
   void _onReceiveResponse(ReceiveResponseEvent event, Emitter<ChatState> emit) {
-    if (event.response.done!) {
+    if (event.response.done == true) {
       emit(ChatLoaded(event.response));
     } else {
       emit(ChatResponseReceived(event.response));
