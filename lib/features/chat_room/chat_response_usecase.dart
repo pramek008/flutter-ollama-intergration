@@ -6,8 +6,16 @@ class GetChatResponseUsecase {
 
   GetChatResponseUsecase(this._repository);
 
-  Stream<ChatResponseModel> execute({required String userInput}) {
-    return _repository.getChatResponse(userInput);
+  Stream<ChatResponseModel> executeStream({required String userInput}) {
+    return _repository.getChatResponseStream(
+      userInput,
+    );
+  }
+
+  Future<ChatResponseModel> executeNonStream({required String userInput}) {
+    return _repository.getChatResponseNonStream(
+      userInput,
+    );
   }
 
   void abortRequest() {

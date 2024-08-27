@@ -6,8 +6,12 @@ class ChatRepository {
 
   ChatRepository(this._datasource);
 
-  Stream<ChatResponseModel> getChatResponse(String userInput) {
-    return _datasource.getChatResponseFromServer(userInput: userInput);
+  Stream<ChatResponseModel> getChatResponseStream(String userInput) {
+    return _datasource.getChatResponseStream(userInput: userInput);
+  }
+
+  Future<ChatResponseModel> getChatResponseNonStream(String userInput) async {
+    return _datasource.getChatResponseNonStream(userInput: userInput);
   }
 
   void abortRequest() {
