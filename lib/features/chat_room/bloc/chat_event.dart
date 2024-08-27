@@ -9,11 +9,12 @@ abstract class ChatEvent extends Equatable {
 
 class SendMessageEvent extends ChatEvent {
   final String message;
+  final bool streamMode;
 
-  const SendMessageEvent(this.message);
+  const SendMessageEvent(this.message, {this.streamMode = false});
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, streamMode];
 }
 
 class ReceiveResponseEvent extends ChatEvent {
