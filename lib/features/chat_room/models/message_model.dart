@@ -1,10 +1,11 @@
 // lib/src/features/chat_feature/domain/Model/chat_message_Model.dart
 
-enum MessageSender { user, ai }
+enum MessageRole { user, ai }
 
-class MessageSenderModel {
+class MessageModel {
   final String message;
-  final MessageSender sender;
-
-  MessageSenderModel({required this.message, required this.sender});
+  final MessageRole sender;
+  final DateTime time;
+  MessageModel(
+      {required this.message, required this.sender, required this.time});
 }
