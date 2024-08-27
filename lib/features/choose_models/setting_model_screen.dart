@@ -84,13 +84,18 @@ class _SettingModelScreenState extends State<SettingModelScreen> {
                   _buildTextField('Model Name', _modelNameController),
                   ElevatedButton(
                     onPressed: () async {
-                      // await storage.writeUser(_nameController?.text ?? 'User');
-                      // await storage
-                      //     .writeBaseUrl(_apiBaseUrlController?.text ?? '');
-                      // await storage
-                      //     .writeCustomPath(_apiPathController?.text ?? '');
-                      // await storage
-                      //     .writeCustomModel(_modelNameController?.text ?? '');
+                      await storage.writeUser(_nameController?.text ?? 'User');
+                      await storage
+                          .writeBaseUrl(_apiBaseUrlController?.text ?? '');
+                      await storage
+                          .writeCustomPath(_apiPathController?.text ?? '');
+                      await storage
+                          .writeCustomModel(_modelNameController?.text ?? '');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Setting saved'),
+                        ),
+                      );
                     },
                     child: const Text('Save'),
                   ),
