@@ -24,9 +24,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     _chatSubscription?.cancel();
     _chatSubscription =
         _getChatResponseUsecase.execute(userInput: event.message).listen(
-              (response) => add(ReceiveResponseEvent(response)),
-              onError: (error) => add(ReceiveResponseEvent(
-                  ChatResponseModel(response: "Error: $error", done: true))),
+              (response) => add(
+                ReceiveResponseEvent(response),
+              ),
+              onError: (error) => add(
+                ReceiveResponseEvent(
+                  ChatResponseModel(response: "Error: $error", done: true),
+                ),
+              ),
             );
   }
 
