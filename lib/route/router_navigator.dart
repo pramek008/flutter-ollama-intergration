@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_ollama_integration/features/chat_room/chat_room.dart';
+import 'package:flutter_ollama_integration/features/chat_room/chat_room_screen.dart';
 import 'package:flutter_ollama_integration/features/choose_models/setting_model_screen.dart';
 import 'package:go_router/go_router.dart';
 
