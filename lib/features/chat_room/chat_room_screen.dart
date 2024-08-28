@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_ollama_integration/features/chat_room/models/message_model.dart';
 
+import '../../clients/locator_injector.dart';
+import '../../services/secure_storage.dart';
 import 'bloc/chat_bloc.dart';
 
 class ChatRoomScreen extends StatefulWidget {
@@ -16,13 +18,29 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   // final List<String> _messages = [];
   final TextEditingController _controller = TextEditingController();
   final List<MessageModel> _chatHistory = [];
-  String _currentAiResponse = '';
   final ScrollController _scrollController = ScrollController();
+  String _currentAiResponse = '';
+
+  bool _isStreamMode = true;
+
+  String? userName = '';
+  final storageService = locator<SecureStorageImpl>();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSetting();
+  }
+
+  void _loadSetting() async {
+    userName = await storageService.readUser();
+  }
 
   @override
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
+
     super.dispose();
   }
 
@@ -37,30 +55,46 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Chat')),
+      appBar: AppBar(title: const Text('Chat'), actions: [
+        Row(
+          children: [
+            const Text('Stream Mode'),
+            Switch(
+              value: _isStreamMode,
+              onChanged: (value) {
+                setState(() {
+                  _isStreamMode = value;
+                });
+              },
+            ),
+          ],
+        ),
+      ]),
       body: BlocConsumer<ChatBloc, ChatState>(
         listener: (context, state) {
-          if (state is ChatResponseReceived) {
+          if (state is ChatResponseReceived && _isStreamMode) {
             setState(() {
               _currentAiResponse += state.response.response!;
               _scrollToBottom();
-              // if (_messages.isNotEmpty) {
-              // _messages[_messages.length - 1] += state.response.response!;
-              // }
-              // else {
-              // _messages.add(state.response.response!);
-              // }
             });
           } else if (state is ChatLoaded) {
             setState(() {
-              _chatHistory.add(MessageModel(
-                sender: MessageRole.ai,
-                message: _currentAiResponse,
-                time: DateTime.now(),
-              ));
-              _currentAiResponse = '';
+              if (_isStreamMode) {
+                _chatHistory.add(MessageModel(
+                  sender: MessageRole.ai,
+                  message: _currentAiResponse,
+                  time: DateTime.now(),
+                ));
+                _currentAiResponse = '';
+              } else {
+                _chatHistory.add(MessageModel(
+                  sender: MessageRole.ai,
+                  message: state.response.response.toString(),
+                  time: DateTime.now(),
+                ));
+              }
+              _scrollToBottom();
             });
-            _scrollToBottom();
           } else if (state is ChatAborted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Chat request aborted')),
@@ -98,7 +132,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                             children: [
                               Text(
                                 message.sender == MessageRole.user
-                                    ? 'You'
+                                    ? userName?.isEmpty ?? true
+                                        ? 'User'
+                                        : userName!
                                     : 'AI',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
@@ -152,6 +188,22 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     Expanded(
                       child: TextField(
                         controller: _controller,
+                        onSubmitted: (value) {
+                          if (_controller.text.isNotEmpty) {
+                            context.read<ChatBloc>().add(SendMessageEvent(
+                                _controller.text,
+                                streamMode: _isStreamMode));
+                            setState(() {
+                              _chatHistory.add(MessageModel(
+                                sender: MessageRole.user,
+                                message: _controller.text,
+                                time: DateTime.now(),
+                              ));
+                              _controller.clear();
+                              _scrollToBottom();
+                            });
+                          }
+                        },
                         decoration:
                             const InputDecoration(hintText: 'Type a message'),
                       ),
@@ -160,9 +212,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       icon: const Icon(Icons.send),
                       onPressed: () {
                         if (_controller.text.isNotEmpty) {
-                          context
-                              .read<ChatBloc>()
-                              .add(SendMessageEvent(_controller.text));
+                          context.read<ChatBloc>().add(SendMessageEvent(
+                              _controller.text,
+                              streamMode: _isStreamMode));
                           setState(() {
                             _chatHistory.add(MessageModel(
                               sender: MessageRole.user,
